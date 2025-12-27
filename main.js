@@ -1,381 +1,648 @@
-//
 if (!HTMLCanvasElement.prototype.toBlob) {
-   Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
-     value: function (callback, type, quality) {
-       var canvas = this;
-       setTimeout(function() {
-         var binStr = atob( canvas.toDataURL(type, quality).split(',')[1] ),
-         len = binStr.length,
-         arr = new Uint8Array(len);
+    Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+        value: function (callback, type, quality) {
+            const canvas = this;
+            setTimeout(() => {
+                const binStr = atob(canvas.toDataURL(type, quality).split(',')[1]);
+                const len = binStr.length;
+                const arr = new Uint8Array(len);
 
-         for (var i = 0; i < len; i++ ) {
-            arr[i] = binStr.charCodeAt(i);
-         }
+                for (let i = 0; i < len; i++) {
+                    arr[i] = binStr.charCodeAt(i);
+                }
 
-         callback( new Blob( [arr], {type: type || 'image/png'} ) );
-       });
-     }
-  });
+                callback(new Blob([arr], { type: type || 'image/png' }));
+            });
+        }
+    });
 }
 
-var pre=document.getElementById("preview");
-var inp=document.getElementById("input");
-var bbc=document.getElementById("bbcode");
-var tab=document.getElementById("tab");
-var lang=document.getElementById("lang");
-var lang_use=document.getElementById("lang-use");
-var theme=document.getElementById("theme");
-var ctn=document.getElementsByClassName("content-row")[0];
-var trans={
-	"cpp":"C/C++",
-	"cs":"C#",
-	"css":"CSS",
-	"http":"HTTP/HTTPS",
-	"java":"Java",
-	"javascript":"JavaScript",
-	"json":"JSON",
-	"objectivec":"Objective C",
-	"perl":"Perl",
-	"php":"PHP",
-	"python":"Python",
-	"ruby":"Ruby",
-	"sql":"SQL",
-	"vbnet":"VB.Net",
-	"vbscript":"VBScript",
-	"xml":"HTML/XML",
-	"html":"HTML/XML"
+const elements = {
+    preview: document.getElementById('preview'),
+    input: document.getElementById('input'),
+    bbcode: document.getElementById('bbcode'),
+    tab: document.getElementById('tab'),
+    lang: document.getElementById('lang'),
+    langUse: document.getElementById('lang-use'),
+    theme: document.getElementById('theme'),
+    previewImages: document.getElementById('preview_images'),
+    imgDownload: document.getElementById('imgdl')
 };
 
-function onChangeTab()
-{
-	hljs.configure({
-		tabReplace: '        '.substr(-parseInt(tab.value,10))
-	});
-	refreshOutput();
+const languageTranslations = {
+    html: 'HTML',
+    xml: 'XML',
+    css: 'CSS',
+    scss: 'SCSS',
+    sass: 'Sass',
+    less: 'Less',
+    javascript: 'JavaScript',
+    typescript: 'TypeScript',
+    jsx: 'JSX (React)',
+    tsx: 'TSX (React TypeScript)',
+    json: 'JSON',
+    yaml: 'YAML',
+    markdown: 'Markdown',
+    php: 'PHP',
+    python: 'Python',
+    ruby: 'Ruby',
+    java: 'Java',
+    kotlin: 'Kotlin',
+    scala: 'Scala',
+    go: 'Go',
+    rust: 'Rust',
+    swift: 'Swift',
+    objectivec: 'Objective-C',
+    perl: 'Perl',
+    lua: 'Lua',
+    r: 'R',
+    julia: 'Julia',
+    c: 'C',
+    cpp: 'C++',
+    cs: 'C#',
+    vbnet: 'VB.NET',
+    fsharp: 'F#',
+    bash: 'Bash',
+    shell: 'Shell',
+    powershell: 'PowerShell',
+    batch: 'Batch',
+    sql: 'SQL',
+    mysql: 'MySQL',
+    postgresql: 'PostgreSQL',
+    plsql: 'PL/SQL',
+    haskell: 'Haskell',
+    erlang: 'Erlang',
+    elixir: 'Elixir',
+    clojure: 'Clojure',
+    scheme: 'Scheme',
+    lisp: 'Lisp',
+    ocaml: 'OCaml',
+    dart: 'Dart',
+    groovy: 'Groovy',
+    coffeescript: 'CoffeeScript',
+    assembly: 'Assembly',
+    x86asm: 'x86 Assembly',
+    armasm: 'ARM Assembly',
+    django: 'Django Template',
+    handlebars: 'Handlebars',
+    pug: 'Pug',
+    twig: 'Twig',
+    ini: 'INI',
+    toml: 'TOML',
+    properties: 'Properties',
+    nginx: 'Nginx Config',
+    apache: 'Apache Config',
+    dockerfile: 'Dockerfile',
+    http: 'HTTP',
+    https: 'HTTPS',
+    latex: 'LaTeX',
+    tex: 'TeX',
+    diff: 'Diff',
+    patch: 'Patch',
+    makefile: 'Makefile',
+    cmake: 'CMake',
+    gradle: 'Gradle',
+    vbscript: 'VBScript',
+    applescript: 'AppleScript',
+    graphql: 'GraphQL',
+    protobuf: 'Protocol Buffers',
+    fortran: 'Fortran',
+    cobol: 'COBOL',
+    delphi: 'Delphi',
+    pascal: 'Pascal',
+    matlab: 'MATLAB',
+    verilog: 'Verilog',
+    vhdl: 'VHDL',
+    prolog: 'Prolog',
+    ada: 'Ada',
+    d: 'D',
+    nim: 'Nim',
+    crystal: 'Crystal',
+    zig: 'Zig',
+    v: 'V',
+    solidity: 'Solidity',
+    wasm: 'WebAssembly',
+    stylus: 'Stylus'
+};
+
+function convertColorToHex(colorString) {
+    const matches = colorString.match(/\d+/gi);
+    const alpha = matches.length === 4 ? parseFloat(matches[3]) : 1;
+
+    const r = Math.round(parseInt(matches[0], 10) * alpha + (1 - alpha) * 255);
+    const g = Math.round(parseInt(matches[1], 10) * alpha + (1 - alpha) * 255);
+    const b = Math.round(parseInt(matches[2], 10) * alpha + (1 - alpha) * 255);
+
+    return '#' +
+        ('0' + r.toString(16)).substr(-2) +
+        ('0' + g.toString(16)).substr(-2) +
+        ('0' + b.toString(16)).substr(-2);
 }
-function onChangeLang()
-{
-	refreshOutput();
+
+String.prototype.escapeHtml = function () {
+    return this.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
+function getMaxColorValue(colorString) {
+    const matches = colorString.match(/\d+/gi);
+    const alpha = matches.length === 4 ? parseFloat(matches[3]) : 1;
+    const max = Math.max(
+        parseInt(matches[0], 10),
+        parseInt(matches[1], 10),
+        parseInt(matches[2], 10)
+    );
+    return max * alpha + 255 * (1 - alpha);
 }
-var onThemeChange=(function (){
-	var tmp=pre.parentElement.className;
-	return function ()
-	{
-		var pfx=theme.options[theme.selectedIndex].innerHTML;
-		pre.parentElement.className=pfx+" "+tmp;
-		hljs.configure({
-			classPrefix:pfx+'-'
-		});
-		refreshOutput();
-	}
+
+function getColorStyle(className) {
+    const tempPre = document.createElement('pre');
+    tempPre.className = className;
+    document.body.appendChild(tempPre);
+
+    const computedStyle = getComputedStyle(tempPre, null);
+    const textColor = computedStyle.color;
+    const bgColor = computedStyle.backgroundColor;
+
+    const result = {
+        type: getMaxColorValue(textColor) < getMaxColorValue(bgColor) ? 0 : 1,
+        bgcolor: bgColor
+    };
+
+    document.body.removeChild(tempPre);
+    return result;
+}
+function onChangeTab() {
+    const tabSize = parseInt(elements.tab.value, 10);
+    const tabReplacement = ' '.repeat(tabSize);
+
+    hljs.configure({
+        tabReplace: tabReplacement
+    });
+
+    refreshOutput();
+}
+
+const onThemeChange = (() => {
+    const originalClassName = elements.preview.parentElement.className;
+
+    return function () {
+        const selectedTheme = elements.theme.options[elements.theme.selectedIndex];
+        const themePrefix = selectedTheme.innerHTML;
+
+        elements.preview.parentElement.className = `${themePrefix} ${originalClassName}`;
+
+        hljs.configure({
+            classPrefix: `${themePrefix}-`
+        });
+
+        refreshOutput();
+    };
 })();
 
-function refreshOutput()
-{
-	var out;
-	if(lang.value=="auto")
-		out=hljs.highlightAuto(hljs.fixMarkup(inp.value));
-	else
-		out=hljs.highlight(lang.value,hljs.fixMarkup(inp.value),true);
-	lang_use.textContent=trans[out.language]?trans[out.language]:out.language;
-	pre.className=out.language;
-	pre.innerHTML=out.value;
+function refreshOutput() {
+    const inputValue = hljs.fixMarkup(elements.input.value);
+    let result;
+
+    if (elements.lang.value === 'auto') {
+        result = hljs.highlightAuto(inputValue);
+    } else {
+        result = hljs.highlight(elements.lang.value, inputValue, true);
+    }
+
+    const translatedLang = languageTranslations[result.language] || result.language;
+    elements.langUse.textContent = translatedLang;
+    elements.preview.className = result.language;
+    elements.preview.innerHTML = result.value;
 }
 
-inp.addEventListener("change",refreshOutput);
-inp.addEventListener("keyup",refreshOutput);
-tab.addEventListener("change",onChangeTab);
-lang.addEventListener("change",refreshOutput);
-theme.addEventListener("change",onThemeChange);
-window.addEventListener("resize",resize);
-function resize()
-{
-	var h0=document.documentElement.clientHeight-50;
-	var obj=document.getElementsByClassName("auto_height");
-	var i;
-	for(i=obj.length-1;i>=0;--i)
-	{
-		obj[i].style.height=(h0)+"px";
-	}
-}
-function getBBCode(ele,bgcolor,table)
-{
-	var str,undo;
-	var stack_node;
-	if(ele.firstChild===null)
-		return "null";
-	var i,nd,n,top,attr_change=false,c_style;
-  if (table === 1){
-    stack_node=[{nodes:ele.childNodes,"idx":0,"endTag":"[/size][/font][/td][/tr][/table]"}];
-  }else{
-    stack_node=[{nodes:ele.childNodes,"idx":0,"endTag":"[/size][/font][/bgcolor]"}];
-  }
-	c_style=window.getComputedStyle(ele,null);
-  if (table === 1){
-    str="[table width=98% cellspacing=1 border=1][tr][td bgcolor="+conv_color(bgcolor)+"][font=Courier New][size=2][color="+conv_color(c_style["color"])+"]";
-  }else{
-    str="[bgcolor="+conv_color(bgcolor)+"][font=Courier New][size=2][color="+conv_color(c_style["color"])+"]";
-  }
-	for(n=stack_node.length;n>0;n=stack_node.length)
-	{
-		top=stack_node[n-1];
-		if(top.idx==top.nodes.length)
-		{
-			str+=top.endTag;
-			stack_node.length-=1;
-			continue;
-		}
-		nd=top.nodes[top.idx++];
-		switch(nd.nodeType)
-		{
-		case Node.TEXT_NODE:
-			str+=(nd.nodeValue).replace(/\[/g,"&#91;").replace(/\]/g,"&#93;");
-			break;
-		case Node.ELEMENT_NODE:
-			c_style=window.getComputedStyle(nd,null);
-			str+="[color="+conv_color(c_style["color"])+"]";
-			undo="[/color]";
-			if(c_style["fontStyle"].toLowerCase()=="italic")
-			{
-				str+="[i]";
-				undo="[/i]"+undo;
-			}
-			if(c_style["fontWeight"]>550)
-			{
-				str+="[b]";
-				undo="[/b]"+undo;
-			}
-			stack_node.push({nodes:nd.childNodes,"idx":0,"endTag":undo});
-		default:
-		}
-	}
-	str+="";
-	return str;
-}
-function conv_color(cstr)
-{
-	var mch=cstr.match(/\d+/gi);
-	return "#"
-	+("0"+parseInt(mch[0],10).toString(16)).substr(-2)
-	+("0"+parseInt(mch[1],10).toString(16)).substr(-2)
-	+("0"+parseInt(mch[2],10).toString(16)).substr(-2);
-}
-String.prototype.convHtml=function()
-{
-	return this.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
-}
-function getSvg(ele,bgcolor)
-{
-	var tspan={
-		newLine:true,
-		y:0,
-		dy:20,
-		sty:[],
-		pushStyle:function(ele){
-			var c_style=window.getComputedStyle(ele,null);
-			var s={};
-			s.color=conv_color(c_style["color"]);
-			s.italic=(c_style["fontStyle"].toLowerCase()=="italic"?";font-style:italic":"");
-			s.bold=(c_style["fontWeight"]>550?";font-weight:bold":"");
-			this.sty.push(s);
-		},
-		popStyle:function(){
-			if(this.sty.length>0)
-				this.sty.length-=1;
-		},
-		getStyle:function (){
-			if(this.sty.length>0)
-				return this.sty[this.sty.length-1];
-			else
-				return null;
-		},
-		writeText:function (txt){
-			var arr=txt.split('\n');
-			var i,n,v;
-			var str="";
-			var s=this.getStyle();
-			for(i=0,n=arr.length;i<n;++i)
-			{
-				v=arr[i];
-				if(this.newLine)
-				{
-					this.y+=this.dy;
-					str+="<text x='0' y='"+this.y+"' style='font-size:16px;font-family:Courier New' xml:space='preserve'>";
-					this.newLine=false;
-				}
-				str+="<tspan style='fill:"+s.color+s.italic+s.bold+"'>"+v.convHtml()+"</tspan>";
-				//str+=v;
-				if(i<n-1)
-				{
-					str+="</text>\n";
-					this.newLine=true;
-				}
-			}
-			return str;
-		}
-	}
-	
-	var str,tsp;
-	var stack_node;
-	if(ele.firstChild===null)
-		return "null";
-	var i,nd,n,top,attr_change=false;
-	stack_node=[{nodes:ele.childNodes,"idx":0,"endTag":"</g></svg>"}];
-	str='<svg xmlns="http://www.w3.org/2000/svg" style="background-color:'+conv_color(bgcolor)+'"><g>\n';
-	tspan.pushStyle(ele);	
-	for(n=stack_node.length;n>0;n=stack_node.length)
-	{
-		top=stack_node[n-1];
-		if(top.idx==top.nodes.length)
-		{
-			str+=top.endTag;
-			stack_node.length-=1;
-			tspan.popStyle(nd);
-			continue;
-		}
-		nd=top.nodes[top.idx++];
-		switch(nd.nodeType)
-		{
-		case Node.TEXT_NODE:
-			str+=tspan.writeText(nd.nodeValue);
-			break;
-		case Node.ELEMENT_NODE:
-			tspan.pushStyle(nd);
-			stack_node.push({nodes:nd.childNodes,"idx":0,"endTag":""});
-		default:
-		}
-	}
-	str+="";
-	return str.replace("</tspan></svg>","</tspan><text></svg>");
-}
-function clearContent()
-{
-	inp.value='';
-	refreshOutput();
-}
-function copyBBC(table)
-{
-  bbc.value=getBBCode(pre,theme.options[theme.selectedIndex].dataset["bgcolor"], table);
-	bbc.select();
-	document.execCommand("copy");
-	localStorage.setItem("theme",theme.options[theme.selectedIndex].innerHTML);
-}
-function getImg()
-{
-	var div=document.createElement("div");
-	document.body.appendChild(div);
-	div.setAttribute("style","width:1px;height:1px;box-sizing:content-box;overflow:hidden");
-	div.innerHTML=getSvg(pre,theme.options[theme.selectedIndex].dataset["bgcolor"]);
-	var svg=div.children[0];
-	var bbx=svg.children[0].getBBox();
-	svg.setAttributeNS(null,"width",bbx.width+16);
-	svg.setAttributeNS(null,"height",bbx.height+16);
-	svg.setAttributeNS(null,"viewBox",[bbx.x-8,bbx.y-8,bbx.width+16,bbx.height+16].join(' '));
-	var blob=new Blob([div.innerHTML],{type:"image/svg+xml"});
-	var img=new Image();
-	img.onload=function ()
-	{
-		var cvs=document.createElement("canvas");
-		cvs.width=img.width;
-		cvs.height=img.height;
-		var ctx=cvs.getContext('2d');
-		ctx.drawImage(img,0,0);
-		div.removeChild(svg);
-		div.appendChild(cvs);
-		cvs.toBlob(function (bb){
-			var a=document.getElementById("imgdl");
-			a.download="code.png";
-			a.href=URL.createObjectURL(bb);
-			a.click();
-			document.body.removeChild(div);
-		});
-	}
-	img.src=URL.createObjectURL(blob);
-	localStorage.setItem("theme",theme.options[theme.selectedIndex].innerHTML);
-}
-(function init(path,prefix_list)
-{
-	var i,n,t;
-	//偵測用暫時物件
-	var tmp_pre=document.createElement("pre");
-	document.body.appendChild(tmp_pre);
-	//程式語言語言選單
-	var lang_list=hljs.listLanguages(),
-	    i,n,t;
-	lang_list.sort();
-	for(i=0,n=lang_list.length;i<n;++i)
-	{
-		lang.appendChild(t=document.createElement("option"));
-		
-		t.value=lang_list[i];
-		if(trans[lang_list[i]])
-			t.innerHTML=trans[lang_list[i]];
-		else
-			console.log(lang_list[i]+" translation error");
-	}
-	//風格樣式選單
-	var b_list=[],d_list=[],tt;
-	for(i=0,n=prefix_list.length;i<n;++i)
-	{
-		tt=colorStyle(prefix_list[i]);
-		if(tt.type==0)
-		{
-			b_list.push(prefix_list[i]);
-			b_list.push(tt.bgcolor);
-		}
-		else
-		{
-			d_list.push(prefix_list[i]);
-			d_list.push(tt.bgcolor);
-		}
-	}
-	theme.appendChild(t=document.createElement("option"));
-	t.innerHTML="亮系風格";
-	t.disabled=true;
-	for(i=0,n=b_list.length;i<n;i+=2)
-	{
-		theme.appendChild(t=document.createElement("option"));
-		t.dataset["bgcolor"]=b_list[i+1];
-		t.innerHTML=b_list[i];
-	}
-	theme.appendChild(t=document.createElement("option"));
-	t.innerHTML="暗系風格";
-	t.disabled=true;
-	for(i=0,n=d_list.length;i<n;i+=2)
-	{
-		theme.appendChild(t=document.createElement("option"));
-		t.dataset["bgcolor"]=d_list[i+1];
-		t.innerHTML=d_list[i];
-	}
-	//載入之前選定風格
-	theme.selectedIndex=1;
-	if(t=localStorage.theme)
-	{
-		for(i=theme.options.length-1;i>=0 && theme.options[i].innerHTML!=t;--i);
-		if(i>=0)
-			theme.selectedIndex=i;
-	}
-	onThemeChange();
-	document.body.removeChild(tmp_pre);
-	function colorStyle(cname)
-	{
-		tmp_pre.className=cname;
-		var c_style=getComputedStyle(tmp_pre,null);
-		
-		return {
-			type:colorMax(c_style["color"])<colorMax(c_style["backgroundColor"])?0:1,
-			bgcolor:c_style["backgroundColor"]
-		};
-		//亮色風格回傳0 暗系風格回傳1
-	}
-	function colorMax(cstr)
-	{
-		var mch=cstr.match(/\d+/gi);
-		return Math.max(parseInt(mch[0],10),parseInt(mch[1],10),parseInt(mch[2],10));
-	}
-	
-})(theme_data.path,theme_data.css);
-onChangeTab();
-refreshOutput();
-resize();
+function getBBCode(element, backgroundColor, useTable) {
+    if (element.firstChild === null) {
+        return 'null';
+    }
 
+    const computedStyle = window.getComputedStyle(element, null);
+    const bgColor = convertColorToHex(backgroundColor);
+    const textColor = convertColorToHex(computedStyle.color);
+
+    let output = '';
+
+    if (useTable === 1) {
+        output = `[table width=98% cellspacing=1 border=1][tr][td bgcolor=${bgColor}][font=Courier New][size=2][color=${textColor}]`;
+    } else {
+        output = `[bgcolor=${bgColor}][font=Courier New][size=2][color=${textColor}]`;
+    }
+
+    const closingTags = useTable === 1
+        ? '[/size][/font][/td][/tr][/table]'
+        : '[/size][/font][/bgcolor]';
+
+    const stack = [{
+        nodes: element.childNodes,
+        idx: 0,
+        endTag: closingTags
+    }];
+
+    while (stack.length > 0) {
+        const top = stack[stack.length - 1];
+
+        if (top.idx === top.nodes.length) {
+            output += top.endTag;
+            stack.pop();
+            continue;
+        }
+
+        const node = top.nodes[top.idx++];
+
+        switch (node.nodeType) {
+            case Node.TEXT_NODE:
+                output += node.nodeValue.replace(/\[/g, '&#91;').replace(/\]/g, '&#93;');
+                break;
+
+            case Node.ELEMENT_NODE:
+                const nodeStyle = window.getComputedStyle(node, null);
+                const nodeColor = convertColorToHex(nodeStyle.color);
+
+                let openTags = `[color=${nodeColor}]`;
+                let closeTags = '[/color]';
+
+                if (nodeStyle.fontStyle.toLowerCase() === 'italic') {
+                    openTags += '[i]';
+                    closeTags = '[/i]' + closeTags;
+                }
+
+                if (parseInt(nodeStyle.fontWeight) > 550) {
+                    openTags += '[b]';
+                    closeTags = '[/b]' + closeTags;
+                }
+
+                output += openTags;
+                stack.push({
+                    nodes: node.childNodes,
+                    idx: 0,
+                    endTag: closeTags
+                });
+                break;
+        }
+    }
+
+    return output;
+}
+
+class TSpanManager {
+    constructor() {
+        this.newLine = true;
+        this.y = 0;
+        this.dy = 20;
+        this.styleStack = [];
+    }
+
+    pushStyle(element) {
+        const computedStyle = window.getComputedStyle(element, null);
+
+        this.styleStack.push({
+            color: convertColorToHex(computedStyle.color),
+            italic: computedStyle.fontStyle.toLowerCase() === 'italic' ? ';font-style:italic' : '',
+            bold: parseInt(computedStyle.fontWeight) > 550 ? ';font-weight:bold' : ''
+        });
+    }
+
+    popStyle() {
+        if (this.styleStack.length > 0) {
+            this.styleStack.pop();
+        }
+    }
+
+    getStyle() {
+        return this.styleStack.length > 0
+            ? this.styleStack[this.styleStack.length - 1]
+            : null;
+    }
+
+    writeText(text) {
+        const lines = text.split('\n');
+        let output = '';
+        const style = this.getStyle();
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (this.newLine) {
+                this.y += this.dy;
+                output += `<text x='0' y='${this.y}' style='font-size:16px;font-family:Courier New' xml:space='preserve'>`;
+                this.newLine = false;
+            }
+
+            output += `<tspan style='fill:${style.color}${style.italic}${style.bold}'>${line.escapeHtml()}</tspan>`;
+
+            if (i < lines.length - 1) {
+                output += '</text>\n';
+                this.newLine = true;
+            }
+        }
+
+        return output;
+    }
+}
+
+function getSvg(element, backgroundColor) {
+    if (element.firstChild === null) {
+        return 'null';
+    }
+
+    const tspan = new TSpanManager();
+    const bgColor = convertColorToHex(backgroundColor);
+
+    let output = `<svg xmlns="http://www.w3.org/2000/svg" style="background-color:${bgColor}"><g>\n`;
+
+    const stack = [{
+        nodes: element.childNodes,
+        idx: 0,
+        endTag: '</g></svg>'
+    }];
+
+    tspan.pushStyle(element);
+
+    while (stack.length > 0) {
+        const top = stack[stack.length - 1];
+
+        if (top.idx === top.nodes.length) {
+            output += top.endTag;
+            stack.pop();
+            tspan.popStyle();
+            continue;
+        }
+
+        const node = top.nodes[top.idx++];
+
+        switch (node.nodeType) {
+            case Node.TEXT_NODE:
+                output += tspan.writeText(node.nodeValue);
+                break;
+
+            case Node.ELEMENT_NODE:
+                tspan.pushStyle(node);
+                stack.push({
+                    nodes: node.childNodes,
+                    idx: 0,
+                    endTag: ''
+                });
+                break;
+        }
+    }
+
+    return output.replace('</tspan></svg>', '</tspan><text></svg>');
+}
+
+function createCanvasFromSvg(svgString, callback) {
+    const div = document.createElement('div');
+    div.style.cssText = 'width:0; height:0; box-sizing:content-box; overflow:hidden';
+    document.body.appendChild(div);
+    div.innerHTML = svgString;
+
+    const svg = div.children[0];
+    const bbox = svg.children[0].getBBox();
+
+    svg.setAttributeNS(null, 'width', bbox.width + 16);
+    svg.setAttributeNS(null, 'height', bbox.height + 16);
+    svg.setAttributeNS(null, 'viewBox', [
+        bbox.x - 8,
+        bbox.y - 8,
+        bbox.width + 16,
+        bbox.height + 16
+    ].join(' '));
+
+    const blob = new Blob([div.innerHTML], { type: 'image/svg+xml' });
+    const img = new Image();
+
+    img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        div.removeChild(svg);
+        div.appendChild(canvas);
+
+        callback(canvas, div);
+    };
+
+    img.src = URL.createObjectURL(blob);
+}
+
+function clearContent() {
+    elements.input.value = '';
+    refreshOutput();
+}
+
+function confirmClear() {
+    if (confirm('清除全部？')) {
+        clearContent();
+    }
+}
+
+function copyBBC(useTable) {
+    const selectedTheme = elements.theme.options[elements.theme.selectedIndex];
+    const bbcodeText = getBBCode(elements.preview, selectedTheme.dataset.bgcolor, useTable);
+
+    if (bbcodeText === 'null') {
+        alert('請輸入文字。');
+        return;
+    }
+
+    elements.bbcode.value = bbcodeText;
+    elements.bbcode.select();
+    document.execCommand('copy');
+
+    localStorage.setItem('theme', selectedTheme.innerHTML);
+
+    const button = event.target;
+    const originalText = button.innerHTML;
+    const originalClass = button.className;
+
+    button.innerHTML = '✓ 已複製至剪貼簿！';
+    button.disabled = true;
+    button.className = originalClass + ' copied';
+
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        button.className = originalClass;
+    }, 2000);
+}
+
+function getImg() {
+    if (elements.input.value.length === 0) {
+        alert('請輸入文字。');
+        return;
+    }
+
+    const selectedTheme = elements.theme.options[elements.theme.selectedIndex];
+    const svgString = getSvg(elements.preview, selectedTheme.dataset.bgcolor);
+    const timestamp = getFormattedDate();
+
+    createCanvasFromSvg(svgString, (canvas, div) => {
+        canvas.toBlob((blob) => {
+            elements.imgDownload.download = `code-${timestamp}.png`;
+            elements.imgDownload.href = URL.createObjectURL(blob);
+            elements.imgDownload.click();
+            document.body.removeChild(div);
+        });
+    });
+
+    localStorage.setItem('theme', selectedTheme.innerHTML);
+}
+
+function getFormattedDate() {
+    var date = new Date();
+
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hour = date.getHours();
+    var min = date.getMinutes();
+    var sec = date.getSeconds();
+
+    month = (month < 10 ? "0" : "") + month;
+    day = (day < 10 ? "0" : "") + day;
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    sec = (sec < 10 ? "0" : "") + sec;
+
+    return date.getFullYear() + "-" + month + "-" + day + "-" + hour + "-" + min + "-" + sec;
+}
+
+function toImg() {
+    if (elements.input.value.length === 0) {
+        alert('請輸入文字。');
+        return;
+    }
+
+    const selectedTheme = elements.theme.options[elements.theme.selectedIndex];
+    const svgString = getSvg(elements.preview, selectedTheme.dataset.bgcolor);
+
+    const button = event.target;
+    const originalText = button.innerHTML;
+    const originalClass = button.className;
+
+    button.innerHTML = '處理中...';
+    button.disabled = true;
+
+    createCanvasFromSvg(svgString, (canvas, div) => {
+        canvas.toBlob((blob) => {
+            if (navigator.clipboard && window.ClipboardItem) {
+                const item = new ClipboardItem({ 'image/png': blob });
+                navigator.clipboard.write([item]).then(() => {
+                    button.innerHTML = '✓ 已複製至剪貼簿！';
+                    button.className = originalClass + ' copied';
+
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                        button.className = originalClass;
+                    }, 2000);
+                }).catch((err) => {
+                    console.error('複製時發生錯誤', err);
+                    showImageModal(blob);
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                });
+            } else {
+                showImageModal(blob);
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+
+            document.body.removeChild(div);
+        });
+    });
+}
+
+function showImageModal(blob) {
+    const imageUrl = URL.createObjectURL(blob);
+    elements.previewImages.innerHTML = `
+        <img src="${imageUrl}" style="width: 90%;" alt="Code Preview"/>
+        <p class="text-warning mt-2">您的瀏覽器不支援自動複製圖片，請右鍵點擊圖片選擇「複製圖片」</p>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('preimg'));
+    modal.show();
+}
+
+function initialize() {
+    const languages = hljs.listLanguages().sort();
+
+    languages.forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.innerHTML = languageTranslations[lang] || lang.charAt(0).toUpperCase() + lang.slice(1);
+        elements.lang.appendChild(option);
+    });
+
+    const brightThemes = [];
+    const darkThemes = [];
+
+    theme_data.css.forEach(themeName => {
+        const style = getColorStyle(themeName);
+        const themeData = [themeName, style.bgcolor];
+
+        if (style.type === 0) {
+            brightThemes.push(themeData);
+        } else {
+            darkThemes.push(themeData);
+        }
+    });
+
+    let option = document.createElement('option');
+    option.innerHTML = '亮系風格';
+    option.disabled = true;
+    elements.theme.appendChild(option);
+
+    brightThemes.forEach(([name, bgcolor]) => {
+        const opt = document.createElement('option');
+        opt.dataset.bgcolor = bgcolor;
+        opt.innerHTML = name;
+        elements.theme.appendChild(opt);
+    });
+
+    option = document.createElement('option');
+    option.innerHTML = '暗系風格';
+    option.disabled = true;
+    elements.theme.appendChild(option);
+
+    darkThemes.forEach(([name, bgcolor]) => {
+        const opt = document.createElement('option');
+        opt.dataset.bgcolor = bgcolor;
+        opt.innerHTML = name;
+        elements.theme.appendChild(opt);
+    });
+
+    elements.theme.selectedIndex = 1;
+    const savedTheme = localStorage.getItem('theme');
+
+    if (savedTheme) {
+        const options = Array.from(elements.theme.options);
+        const savedIndex = options.findIndex(opt => opt.innerHTML === savedTheme);
+
+        if (savedIndex >= 0) {
+            elements.theme.selectedIndex = savedIndex;
+        }
+    }
+
+    onThemeChange();
+    onChangeTab();
+    refreshOutput();
+}
+elements.input.addEventListener('change', refreshOutput);
+elements.input.addEventListener('keyup', refreshOutput);
+elements.tab.addEventListener('change', onChangeTab);
+elements.lang.addEventListener('change', refreshOutput);
+elements.theme.addEventListener('change', onThemeChange);
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
+}

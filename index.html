@@ -1,136 +1,236 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
+
 <head>
-	<meta charset="utf-8">
-	<title>程式碼上色</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-	<link href="https://cdn.amsserver.xyz/bootstrap-4.3.min.css" rel="stylesheet" type="text/css">
-	<link href="theme.css" rel="stylesheet" type="text/css">
-	<script src="https://cdn.amsserver.xyz/jQuery.min.js"></script>
-	<script src="https://cdn.amsserver.xyz/bootstrap-4.3.min.js"></script>
-	<script src="theme.js"></script>
-	<script src="highlightJS/highlight.pack.js"></script>
-  <style>
-  html {
-    overflow-x: hidden;
-  }
-  pre{
-    overflow: scroll
-  }
-  #bbcode{
-    z-index:-100;
-    position:absolute;
-    top:0;
-    left:0;
-  }
-  </style>
-</head>
-<body style="padding-left: 5px;padding-right: 5px;">
-  <div class="modal fade bd-example-modal-xl" id="preimg" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">右鍵可直接複製圖片，點擊空白處關閉。</h4>
-        </div>
-        <div id="preview_images" class="modal-body">
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-lg-9">
-    <div id="input-bar">
-      <div class="row">
-        <div class="col-lg-6">
-            <label for="input">輸入code</label>
-            <textarea id="input" class="auto_height form-control" style="width:100%"></textarea>
-            <textarea id="bbcode" style="height:0px;width:0px;"></textarea>
-          </div>
-          <div class="col-lg-6">
-            <label for="preview">預覽</label>
-            <pre id="preview_imgs" class="auto_height"><code id="preview"></code></pre>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3">
-      <div class="form-group">
-          <label for="tab">tab轉換</label>
-          <select id="tab" class="form-control">
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option selected="selected">4</option>
-            <option>8</option>
-          </select>
-      </div>
-      <div class="form-group">
-          <label for="lang">語言<span style="color:red;font-size:0.8em" id="lang-use"></span></label>
-          <select id="lang" class="form-control">
-              <option value="auto">自動偵測</option>
-          </select>
-      </div>
-      <div class="form-group">
-          <label for="theme">主題風格</label>
-          <select id="theme" class="form-control"></select>
-      </div>
-      <div class="row">
-        <div class="col-lg-12">
-          <button class="btn btn-outline-primary btn-block" onclick="copyBBC(1)">複製為 BBCode</button>
-          <button class="btn btn-outline-primary btn-block" onclick="copyBBC(0)">複製為 BBCode (無表格)</button>
-          <button class="btn btn-outline-info btn-block" onclick="getImg()">儲存為 png</button>
-          <button class="btn btn-outline-info btn-block" onclick="toImg()">直接顯示複製圖片</button>
-          <button class="btn btn-outline-danger btn-block" onclick="{if(confirm('清除全部?')){clearContent();return true;}return false;}">清除全部</button>
-        </div>
-      </div>
-      <script>
-      function toImg(){   
-      
-        var div=document.createElement("div");
-        document.body.appendChild(div);
-        div.setAttribute("style","width:1px;height:1px;box-sizing:content-box;overflow:hidden");
-        div.innerHTML=getSvg(pre,theme.options[theme.selectedIndex].dataset["bgcolor"]);
-        var svg=div.children[0];
-        var bbx=svg.children[0].getBBox();
-        svg.setAttributeNS(null,"width",bbx.width+16);
-        svg.setAttributeNS(null,"height",bbx.height+16);
-        svg.setAttributeNS(null,"viewBox",[bbx.x-8,bbx.y-8,bbx.width+16,bbx.height+16].join(' '));
-        var blob=new Blob([div.innerHTML],{type:"image/svg+xml"});
-        var img=new Image();
-        img.onload=function (){
-          var cvs=document.createElement("canvas");
-          cvs.width=img.width;
-          cvs.height=img.height;
-          var ctx=cvs.getContext('2d');
-          ctx.drawImage(img,0,0);
-          div.removeChild(svg);
-          div.appendChild(cvs);
-          cvs.toBlob(function (bb){
-            var a=document.getElementById("imgdl");
-            a.download="code.png";
-            a.href=URL.createObjectURL(bb);
-            a.click();
-            document.body.removeChild(div);
-          });
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=no">
+
+    <title>網頁小工具 😺 tools.haer0248.me</title>
+
+    <meta name="robots" content="noindex">
+    <meta name="author" content="猫又おにぎり (https://haer0248.me/)">
+
+    <link rel="icon" href="https://haer0248.me/favicon.ico">
+    <link rel="shortcut icon" href="https://haer0248.me/favicon.ico">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="theme.css">
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
         }
-        $('#preview_images').html('<img src="'+URL.createObjectURL(blob)+'" style="width: 90%;"/>');
-        $('#preimg').modal('show')
-      }
-      </script>
-      <hr>
-      <a href="https://github.com/ren1244/ren1244.github.io/tree/master/HighlightToBBCode" target="_blank">原作者 GitHub</a><br>
-      <span>使用 Bootstrap 4.3 編寫 並遵守授權規範放上GitHub開源</span>
-      <hr>
-      <h3>更新紀錄</h3>
-      <ul>
-        <li>新增直接複製圖片 (2019/12/08 20:54)</li>
-        <li>新增重複確認刪除 (2019/04/28 15:50)</li>
-        <li>新增無表格複製BBCode-背景顏色 (2019/04/28 15:20)</li>
-        <li>新增無表格複製BBCode (2019/04/28 12:10)</li>
-      </ul>
+
+        .container-fluid {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-row {
+            flex: 1;
+            min-height: 0;
+        }
+
+        .content-column {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-row {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .editor-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .editor-column label {
+            flex-shrink: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .editor-column textarea,
+        .editor-column pre {
+            flex: 1;
+            min-height: 0;
+            height: 100% !important;
+            margin: 0;
+            resize: none;
+        }
+
+        .sidebar-column {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        .btn:disabled {
+            opacity: 1 !important;
+        }
+
+        .btn.copied {
+            background-color: #198754 !important;
+            border-color: #198754 !important;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="highlightJS/highlight.pack.js"></script>
+    <script src="theme.js"></script>
+</head>
+
+<body data-bs-theme="dark">
+    <div class="container-fluid">
+        <div class="row main-row">
+            <div class="col-lg-9 content-column">
+                <div class="editor-row">
+                    <div class="editor-column">
+                        <label class="form-label" for="input">輸入 Code</label>
+                        <textarea id="input" class="form-control" placeholder="貼上你的程式碼..."></textarea>
+                    </div>
+
+                    <div class="editor-column">
+                        <label class="form-label" for="preview">預覽</label>
+                        <pre id="preview_imgs"><code id="preview"></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 sidebar-column">
+                <div class="mb-3">
+                    <label class="form-label" for="tab">Tab 轉換</label>
+                    <select id="tab" class="form-control">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option selected>4</option>
+                        <option>8</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="lang">
+                        語言
+                        <span id="lang-use" style="color: red; font-size: 0.8em"></span>
+                    </label>
+                    <select id="lang" class="form-control">
+                        <option value="auto">自動偵測</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="theme">主題風格 (highlight.js)</label>
+                    <select id="theme" class="form-control"></select>
+                </div>
+
+                <div class="border border-primary mb-3 p-3">
+                    <label class="form-label">BBCode</label>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary w-100" onclick="copyBBC(1)">
+                            複製 BBCode
+                        </button>
+                        <button class="btn btn-primary w-100" onclick="copyBBC(0)">
+                            複製無表格 BBCode
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border border-warning mb-3 p-3">
+                    <label class="form-label">圖片</label>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning w-100" onclick="toImg()">
+                            直接複製到剪貼簿
+                        </button>
+                        <button class="btn btn-warning w-100" onclick="getImg()">
+                            另存為 PNG
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border border-danger mb-3 p-3">
+                    <label class="form-label">危險區域</label>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-danger w-100" onclick="confirmClear()">
+                            清除全部
+                        </button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <p class="mb-0">
+                        <a href="https://github.com/ren1244/ren1244.github.io/tree/master/HighlightToBBCode" target="_blank" rel="noopener noreferrer">
+                            原作者 GitHub
+                        </a><br>
+                        <i class="text-secondary">
+                            使用 Bootstrap 重新編寫 UI，並遵守授權規範放上 GitHub 開源
+                        </i>
+                    </p>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h5>更新紀錄</h5>
+                    <ul>
+                        <li>更新 UI <i class="text-secondary">(2025/12/27 19:34)</i></li>
+                        <li>更新 UI <i class="text-secondary">(2025/05/29 18:19)</i></li>
+                        <li>更新 UI <i class="text-secondary">(2021/06/23 17:20)</i></li>
+                        <li>套用作者修正 <i class="text-secondary">(2021/02/02 11:54)</i></li>
+                        <li>新增直接複製圖片 <i class="text-secondary">(2019/12/08 20:54)</i></li>
+                        <li>新增重複確認刪除 <i class="text-secondary">(2019/04/28 15:50)</i></li>
+                        <li>新增無表格複製 BBCode-背景顏色 <i class="text-secondary">(2019/04/28 15:20)</i></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  <a id="imgdl"></a>
-	<script src="main.js" type="text/javascript"></script>
+
+    <a id="imgdl" style="display: none"></a>
+    <textarea id="bbcode" style="position: absolute; left: -9999px"></textarea>
+
+    <div class="modal fade" id="preimg" tabindex="-1" aria-labelledby="preimgLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div id="preview_images" class="mb-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Script -->
+    <script>
+        const script = document.createElement('script');
+        script.src = 'main.js?_=' + Date.now();
+        document.head.appendChild(script);
+    </script>
+
+    <!-- Tab Key Handler -->
+    <script>
+        document.getElementById('input').addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+    </script>
 </body>
+
 </html>
